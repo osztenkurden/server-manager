@@ -23,6 +23,8 @@ export const startServer = (wss: SimpleWebSocketServer) => {
         }
         nodeServer.process = spawn(linuxPath, ['-dedicated', '+map de_mirage'], { stdio: ['pipe', stdout, 'inherit'] });
 
+        nodeServer.process.stdout?.pipe(process.stdout);
+
         return;
     }
 
