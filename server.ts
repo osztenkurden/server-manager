@@ -17,7 +17,7 @@ export const startServer = (wss: SimpleWebSocketServer) => {
         stdin: "pipe",
         stdout: "pipe"
     });
-
+    const reader = server.process.stdout.getReader();
 
     const decoder = new TextDecoder();
     const wr = new WritableStream({
@@ -26,9 +26,24 @@ export const startServer = (wss: SimpleWebSocketServer) => {
             // process.stdout.write(`XD, ${str}`);
             wss.send("commandline", str);
         }
-    }, { highWaterMark: 5 })
-        //server.process.stdout.pipeTo(Writable.toWeb(process.stdout))
-    server.process.stdout.pipeTo(wr);
+    })
+
+
+    reader.read().then(function processOutput({ done, value }): Promise<void> {
+        if (done) {
+            wss.send("commandline", "STREAM END");
+            console.log("STREAM END");
+            return Promise.resolve();
+        }
+        const str = decoder.decode(value);
+        wss.send("commandline", str);
+        return reader.read().then(processOutput);
+
+    });
+
+
+    //server.process.stdout.pipeTo(Writable.toWeb(process.stdout))
+    // server.process.stdout.pipeTo(wr);
 
 
 }
