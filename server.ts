@@ -57,6 +57,6 @@ export const stopServer = async () => {
 }
 
 export const writeToServer = (text: string) => {
-    console.log("trying to execute", text);
     server.process?.stdin.write(`${text}\n`);
+    server.process?.stdin.write(`\n`);
 }
