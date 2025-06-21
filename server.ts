@@ -13,7 +13,7 @@ const nodeServer = {
     process: null as null | ChildProcess
 }
 
-const SERVER_SPAWN = process.argv[2] ?? 'NODE' as "NODE" | "BUN";
+const SERVER_SPAWN = (process.argv[2] ?? 'NODE') as "NODE" | "BUN";
 
 export const startServer = (wss: SimpleWebSocketServer) => {
     if (SERVER_SPAWN === "NODE") {
@@ -102,5 +102,9 @@ export const stopServer = async () => {
 }
 
 export const writeToServer = (text: string) => {
+    if (SERVER_SPAWN === "NODE") {
+        nodeServer.process?.stdin?.write(`${text}\n`)
+        return;
+    }
     server.process?.stdin.write(`${text}\n`);
 }
