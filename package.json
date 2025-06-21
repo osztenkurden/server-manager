@@ -5,12 +5,15 @@
   "private": true,
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/react-dom": "^19.1.6"
+    "@types/react-dom": "^19.1.6",
+    "bun-plugin-tailwind": "^0.0.15",
+    "tailwindcss": "^4.1.10"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
+    "lucide-react": "^0.522.0",
     "react-dom": "^19.1.0",
     "simple-websockets": "^2.0.3"
   }

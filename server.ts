@@ -12,14 +12,21 @@ export const startServer = (wss: Bun.Server) => {
         console.warn("Server exists!");
         return;
     }
-
+    let lastChunk = '';
     const decoder = new TextDecoder();
     const wr = new WritableStream({
         write: (chunk) => {
             const str = decoder.decode(chunk);
-            wss.publish("stdout", convertEventToMessage("commandline", str));
+            lastChunk += str;
+
+
             if (!str.endsWith("\n")) {
                 writeToServer("");
+            } else {
+
+                const lines = lastChunk.split("\n");
+                wss.publish("stdout", convertEventToMessage("commandline", lines.filter(Boolean)));
+
             }
         }
     })
