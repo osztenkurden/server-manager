@@ -26,7 +26,7 @@ const serverState = {
 
 const handleCommands = (command: string, args: Record<string, string> = {}) => {
 
-    writeToServer(formatCommand(command, args))
+    writeToServer(formatCommand(command, args));
     switch (command) {
         case "PAUSE":
             serverState.isPaused = true;
@@ -42,6 +42,12 @@ const handleCommands = (command: string, args: Record<string, string> = {}) => {
             startServer(server);
             serverState.isOn = true;
             break;
+    }
+
+    if (!(command in COMMON_COMMANDS)) {
+        setTimeout(() => {
+            writeToServer(" ");
+        }, 50);
     }
 }
 
