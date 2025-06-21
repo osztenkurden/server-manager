@@ -1,6 +1,6 @@
 import { SimpleWebSocket } from "simple-websockets";
 
-const socket = new SimpleWebSocket("ws://172.30.0.244:6815");
+const socket = new SimpleWebSocket("ws://172.30.0.244:5815");
 socket.on("connection", () => {
     console.log("CONNECTED")
 })
