@@ -64,7 +64,7 @@ const server = Bun.serve({
                 if (body.command) {
                     handleCommands(body.command, body.args);
                 }
-                return new Response("ok", { status: 200 });
+                return res;
             }
         }
     },
