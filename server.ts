@@ -38,7 +38,11 @@ export const startServer = (wss: SimpleWebSocketServer) => {
         nodeServer.process.stdout?.pipe(process.stdout);
         nodeServer.process.stdout?.on("data", (data) => {
             // process.stdout.write("EEEE", data, "ooooo");
-            console.log("EEE", data.toString(), "OOOO")
+            const str = data.toString();
+            if (str === "\n") return;
+            if (str.endsWith("\n")) return;
+            nodeServer.process?.stdout?.push('\n');
+            // console.log("EEE", data.toString(), "OOOO")
         });
 
         return;
