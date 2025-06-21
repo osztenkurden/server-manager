@@ -1,8 +1,5 @@
-import express from 'express';
-import http from 'http';
-import { SimpleWebSocketServer } from 'simple-websockets/server';
 import { startServer, stopServer, writeToServer } from './server';
-import { convertEventToMessage } from 'simple-websockets';
+
 const COMMON_COMMANDS = {
     "PAUSE": "mp_pause_match",
     "UNPAUSE": "mp_unpause_match",
@@ -12,12 +9,6 @@ const COMMON_COMMANDS = {
     "STOP_SERVER": "quit",
     "TV_STOP": "tv_stoprecord"
 };
-
-const sideEffects: { [K in keyof typeof COMMON_COMMANDS]?: () => void } = {
-    "STOP_SERVER": () => {
-
-    }
-}
 
 const formatCommand = (command: string, args: Record<string, string> = {}) => {
     let currentCommand = command in COMMON_COMMANDS ? COMMON_COMMANDS[command as keyof typeof COMMON_COMMANDS] : command;
@@ -78,7 +69,7 @@ const server = Bun.serve({
         return new Response("Not Found", { status: 404 });
     },
     websocket: {
-        async message(ws, message) {
+        message() {
         },
         open(ws) {
             ws.subscribe("stdout");

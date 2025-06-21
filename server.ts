@@ -1,9 +1,9 @@
 import { convertEventToMessage } from "simple-websockets";
-import type { SimpleWebSocketServer } from "simple-websockets/server";
 const linuxPath = "./../.steam/steam/steamcmd/cs2-ds/game/bin/linuxsteamrt64/cs2";
 
 const server = {
-    process: null as null | Bun.Subprocess<"pipe", "pipe">
+    process: null as null | Bun.Subprocess<"pipe", "pipe">,
+    ws: null as null | Bun.Server
 }
 
 
@@ -28,6 +28,7 @@ export const startServer = (wss: Bun.Server) => {
         stdin: "pipe",
         stdout: "pipe"
     });
+    if (!server.ws) server.ws = wss;
 
     server.process.stdout.pipeTo(wr);
 }
@@ -40,6 +41,9 @@ export const stopServer = async () => {
 
     writeToServer("quit");
     await server.process.exited;
+
+    server.ws?.publish("stdout", convertEventToMessage("commandline", "Server quited gracefully"));
+
     console.log("Server quited gracefully");
     server.process = null;
 }
