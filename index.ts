@@ -1,4 +1,5 @@
 import { startServer, stopServer, writeToServer } from './server';
+import Dashboard from './panel/index.html';
 
 const COMMON_COMMANDS = {
     "PAUSE": "mp_pause_match",
@@ -51,6 +52,7 @@ const server = Bun.serve({
         "/status": (req) => {
             return Response.json(serverState);
         },
+        "/dashboard": Dashboard,
         "/execute": {
             POST: async req => {
                 const body = await req.json() as { command: string, args: any };

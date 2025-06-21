@@ -42,7 +42,7 @@ export const stopServer = async () => {
     writeToServer("quit");
     await server.process.exited;
 
-    server.ws?.publish("stdout", convertEventToMessage("commandline", "Server quited gracefully"));
+    server.ws?.publish("stdout", convertEventToMessage("commandline", "Server quited gracefully\n"));
 
     console.log("Server quited gracefully");
     server.process = null;
