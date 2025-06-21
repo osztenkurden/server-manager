@@ -1,16 +1,35 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Square, RotateCcw, Gamepad2, Flag } from 'lucide-react';
+import { Play, Square, RotateCcw, Gamepad2, Flag, X, Pause, Monitor } from 'lucide-react';
 import { SimpleWebSocket } from 'simple-websockets';
 
-const HOST = "172.30.0.244:5815"; //window.location.host;
+import type { COMMON_COMMANDS } from './../index';
+import type { ResourceUsage } from '../os';
 
-const socket = new SimpleWebSocket<{ commandline: [string | string[]] }>(`ws://${HOST}`);
+const secondsToTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds - 3600 * hours) / 60);
+    const secs = seconds - 3600 * hours - 60 * minutes;
+
+    let text = '';
+
+    if (hours) text += `${hours}h `;
+    if (minutes) text += `${minutes}m `;
+    text += `${secs}s`;
+
+    return text;
+}
+
+// const HOST = "172.30.0.244:5815"; //window.location.host;
+const HOST = window.location.host;
+
+const socket = new SimpleWebSocket<{ commandline: [string | string[]], resources: [ResourceUsage] }>(`ws://${HOST}`);
 
 socket.on("error", err => {
     console.log(err)
 });
 
 export function App() {
+    const [usage, setUsage] = useState<ResourceUsage>({ cpuUsage: 0, memory: 0, freeMemory: 0, uptime: 0 });
     const [output, setOutput] = useState([
         '$ Game console remote terminal initialized...',
         ''
@@ -34,6 +53,10 @@ export function App() {
         socket.on("commandline", data => {
             if (typeof data === "string") addOutputs([data])
             else addOutputs(data);
+        });
+
+        socket.on("resources", (data) => {
+            setUsage(data);
         })
 
         setIsConnected(socket._socket.readyState === 1)
@@ -41,6 +64,7 @@ export function App() {
             socket.removeAllListeners("commandline");
             socket.removeAllListeners("connection");
             socket.removeAllListeners("disconnect");
+            socket.removeAllListeners("resources");
         }
     }, [])
 
@@ -68,14 +92,18 @@ export function App() {
         const prefix = type === 'command' ? `[${timestamp}] $ ` : `[${timestamp}] `;
         setOutput(prev => [...prev, ...text.map(t => `${prefix}${t}`)]);
     };
-
+    const ignoredCommands = ["help", "clear", "status"];
     const handleCommand = (e: any) => {
         if (e.key && e.key !== 'Enter') return;
         if (!command.trim()) return;
 
         addOutputs([command], 'command');
 
-        fetch(`http://${HOST}/execute`, { method: "POST", body: JSON.stringify({ command }) });
+        if (ignoredCommands.includes(command)) {
+            addOutputs(["You fucking wish"]);
+        } else {
+            fetch(`http://${HOST}/execute`, { method: "POST", body: JSON.stringify({ command }) });
+        }
 
         setCommand('');
     };
@@ -101,12 +129,14 @@ export function App() {
     };
 
     const quickActions = [
-        { name: 'START', action: "START_SERVER", icon: Play, color: 'bg-green-600 hover:bg-green-700' },
-        { name: 'STOP', action: "STOP_SERVER", icon: Square, color: 'bg-red-600 hover:bg-red-700' },
-        { name: 'RESTART', action: "STOP_SERVER", icon: RotateCcw, color: 'bg-yellow-600 hover:bg-yellow-700' },
-        { name: 'PLAY', action: "STOP_SERVER", icon: Gamepad2, color: 'bg-blue-600 hover:bg-blue-700' },
-        { name: 'FINISH', action: "STOP_SERVER", icon: Flag, color: 'bg-purple-600 hover:bg-purple-700' }
-    ] as const;
+        { name: 'START SERVER', action: "START_SERVER", icon: Play, color: 'bg-green-600 hover:bg-green-700' },
+        { name: 'STOP SERVER', action: "STOP_SERVER", icon: X, color: 'bg-red-600 hover:bg-red-700' },
+        { name: 'RESTART GAME', action: "STOP_SERVER", icon: RotateCcw, color: 'bg-yellow-600 hover:bg-yellow-700' },
+        { name: 'PAUSE', action: "STOP_SERVER", icon: Pause, color: 'bg-blue-600 hover:bg-blue-700' },
+        { name: 'UNPAUSE', action: "STOP_SERVER", icon: Play, color: 'bg-purple-600 hover:bg-purple-700' },
+        { name: 'TV STOP', action: "TV_STOP", icon: Monitor, color: 'bg-pink-600 hover:bg-pink-700' },
+        { name: 'START MATCH', action: "START_MATCH", icon: Flag, color: 'bg-indigo-600 hover:bg-indigo-700' }
+    ] as const satisfies { name: string, action: COMMON_COMMANDS, icon: any, color: string }[];
     return (
         <div className="flex h-screen bg-gray-900 text-green-400 font-mono  overflow-hidden">
             {/* Main Terminal Area */}
@@ -131,7 +161,11 @@ export function App() {
                             {line}
                         </div>
                     ))}
-                    <div className="animate-pulse">▋</div>
+                    <div className="inline">
+                        {/*$ {command}*/}
+                        <span className="animate-pulse duration-75">▋</span>
+
+                    </div>
                 </div>
 
                 {/* Command Input */}
@@ -160,7 +194,7 @@ export function App() {
             </div>
 
             {/* Quick Actions Panel */}
-            <div className="w-48 bg-gray-800 border-l border-gray-700 p-4 overflow-y-auto">
+            <div className="w-64 bg-gray-800 border-l border-gray-700 p-4 overflow-y-auto">
                 <h2 className="text-lg font-semibold text-green-300 mb-4 text-center">Quick Actions</h2>
                 <div className="space-y-3">
                     {quickActions.map((action) => {
@@ -169,7 +203,7 @@ export function App() {
                             <button
                                 key={action.name}
                                 onClick={() => handleQuickAction(action.action)}
-                                className={`w-full ${action.color} text-white py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors font-semibold`}
+                                className={`w-full ${action.color} text-white py-3 px-4 rounded-lg flex items-center cursor-pointer justify-center space-x-2 transition-colors font-semibold`}
                             >
                                 <IconComponent size={18} />
                                 <span>{action.name}</span>
@@ -182,10 +216,9 @@ export function App() {
                 <div className="mt-8 p-3 bg-gray-900 rounded-lg">
                     <h3 className="text-sm font-semibold text-green-300 mb-2">System Status</h3>
                     <div className="text-xs space-y-1">
-                        <div>CPU: 45%</div>
-                        <div>Memory: 2.1GB</div>
-                        <div>Uptime: 2h 15m</div>
-                        <div>Latency: 12ms</div>
+                        <div>CPU: {(usage.cpuUsage * 100).toFixed(2)}%</div>
+                        <div>Memory: {((usage.memory - usage.freeMemory) / 1024 ** 3).toFixed(1)}GB</div>
+                        <div>Uptime: {secondsToTime(usage.uptime)}</div>
                     </div>
                 </div>
 

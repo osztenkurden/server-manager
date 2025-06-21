@@ -1,5 +1,6 @@
 import { startServer, stopServer, writeToServer } from './server';
 import Dashboard from './panel/index.html';
+import { initiatieResourceUsageLoop } from './os';
 
 const COMMON_COMMANDS = {
     "PAUSE": "mp_pause_match",
@@ -8,8 +9,11 @@ const COMMON_COMMANDS = {
     "START_MATCH": "TODO",
     "RESTART_GAME": "mp_restartgame 1",
     "STOP_SERVER": "quit",
-    "TV_STOP": "tv_stoprecord"
+    "TV_STOP": "tv_stoprecord",
+    "START_SERVER": ""
 };
+
+export type COMMON_COMMANDS = keyof typeof COMMON_COMMANDS;
 
 const formatCommand = (command: string, args: Record<string, string> = {}) => {
     let currentCommand = command in COMMON_COMMANDS ? COMMON_COMMANDS[command as keyof typeof COMMON_COMMANDS] : command;
@@ -89,5 +93,7 @@ const server = Bun.serve({
         },
     },
 });
+
+initiatieResourceUsageLoop(server);
 
 console.log(`Listening on ${server.hostname}:${server.port}`);
