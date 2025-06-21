@@ -21,7 +21,7 @@ export const startServer = (wss: SimpleWebSocketServer) => {
             console.warn("Server exists!");
             return;
         }
-        nodeServer.process = spawn(linuxPath, ['-dedicated', '+map de_mirage'], { stdio: 'inherit' });
+        nodeServer.process = spawn(linuxPath, ['-dedicated', '+map de_mirage'], { stdio: ['pipe', stdout, 'inherit'] });
 
         return;
     }
