@@ -41,7 +41,7 @@ export const startServer = (wss: SimpleWebSocketServer) => {
             const str = data.toString();
             if (str === "\n") return;
             if (str.endsWith("\n")) return;
-            nodeServer.process?.stdout?.push('\n');
+            nodeServer.process?.stdout?.push('\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n');
             console.log("WE PUSH TO NODE");
             // console.log("EEE", data.toString(), "OOOO")
         });
