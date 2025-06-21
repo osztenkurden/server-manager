@@ -74,39 +74,32 @@ export function App() {
         setCommand('');
     };
 
-    const handleQuickAction = (action: typeof quickActions[number]["name"]) => {
+    const handleQuickAction = async (action: typeof quickActions[number]["action"]) => {
         addOutput(`Quick action: ${action}`, 'command');
 
-        setTimeout(() => {
-            switch (action) {
-                case 'START':
-                    addOutput('Game process started');
-                    break;
-                case 'STOP':
-                    addOutput('Game process stopped');
-                    break;
-                case 'RESTART':
-                    addOutput('Restarting game process...');
-                    setTimeout(() => addOutput('Game process restarted successfully'), 1000);
-                    break;
-                case 'PLAY':
-                    addOutput('Sending PLAY signal to game');
-                    break;
-                case 'FINISH':
-                    addOutput('Game session finished');
-                    break;
-                default:
-                    action satisfies never;
-            }
-        }, 100);
+        try {
+            const response = await fetch(`http://${HOST}/execute`, {
+                method: 'POST',
+                body: JSON.stringify({ command: action })
+            });
+
+            //   if (response.ok) {
+            //     const result = await response.text();
+            //     addOutput(result || `${action} executed successfully`);
+            //   } else {
+            //     addOutput(`Error: ${response.status} - ${response.statusText}`);
+            //   }
+        } catch (error) {
+            addOutput(`Network error: ${error}`);
+        }
     };
 
     const quickActions = [
-        { name: 'START', icon: Play, color: 'bg-green-600 hover:bg-green-700' },
-        { name: 'STOP', icon: Square, color: 'bg-red-600 hover:bg-red-700' },
-        { name: 'RESTART', icon: RotateCcw, color: 'bg-yellow-600 hover:bg-yellow-700' },
-        { name: 'PLAY', icon: Gamepad2, color: 'bg-blue-600 hover:bg-blue-700' },
-        { name: 'FINISH', icon: Flag, color: 'bg-purple-600 hover:bg-purple-700' }
+        { name: 'START', action: "START_SERVER", icon: Play, color: 'bg-green-600 hover:bg-green-700' },
+        { name: 'STOP', action: "STOP_SERVER", icon: Square, color: 'bg-red-600 hover:bg-red-700' },
+        { name: 'RESTART', action: "STOP_SERVER", icon: RotateCcw, color: 'bg-yellow-600 hover:bg-yellow-700' },
+        { name: 'PLAY', action: "STOP_SERVER", icon: Gamepad2, color: 'bg-blue-600 hover:bg-blue-700' },
+        { name: 'FINISH', action: "STOP_SERVER", icon: Flag, color: 'bg-purple-600 hover:bg-purple-700' }
     ] as const;
     return (
         <div className="flex h-screen bg-gray-900 text-green-400 font-mono  overflow-hidden">
@@ -168,7 +161,7 @@ export function App() {
                         return (
                             <button
                                 key={action.name}
-                                onClick={() => handleQuickAction(action.name)}
+                                onClick={() => handleQuickAction(action.action)}
                                 className={`w-full ${action.color} text-white py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors font-semibold`}
                             >
                                 <IconComponent size={18} />

@@ -58,5 +58,5 @@ export const stopServer = async () => {
 
 export const writeToServer = (text: string) => {
     server.process?.stdin.write(`${text}\n`);
-    server.process?.stdin.write(`\n`);
+    server.process?.stdin.write(` \n`);
 }
