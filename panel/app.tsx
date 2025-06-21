@@ -16,12 +16,14 @@ export function App() {
         ''
     ]);
     const [command, setCommand] = useState('');
-    const [isConnected, setIsConnected] = useState(socket._socket.readyState);
+    const [isConnected, setIsConnected] = useState(socket._socket.readyState === 1);
     const outputRef = useRef<HTMLDivElement>(null);
+    const lastDistanceFromBottom = useRef(0);
+
 
     useEffect(() => {
         socket.on("connection", () => {
-            addOutput('Connected to remote device');
+            addOutputs(['Connected to remote device']);
             // '$ Connected to remote device',
             // '$ Ready for commands',')
             setIsConnected(true);
@@ -30,10 +32,11 @@ export function App() {
             setIsConnected(false);
         })
         socket.on("commandline", data => {
-            if (typeof data === "string") addOutput(data)
+            if (typeof data === "string") addOutputs([data])
             else addOutputs(data);
         })
 
+        setIsConnected(socket._socket.readyState === 1)
         return () => {
             socket.removeAllListeners("commandline");
             socket.removeAllListeners("connection");
@@ -45,21 +48,24 @@ export function App() {
     useEffect(() => {
         if (outputRef.current) {
             const element = outputRef.current;
-            const isNearBottom = element.scrollHeight - element.scrollTop - element.clientHeight <= 200;
 
-            if (isNearBottom) {
+            if (lastDistanceFromBottom.current <= 250) {
                 element.scrollTop = element.scrollHeight;
             }
         }
     }, [output]);
 
-    const addOutput = (text: string, type = 'output') => {
-        addOutputs([text], type);
-    };
+    // const addOutput = (text: string, type = 'output') => {
+    //     addOutputs([text], type);
+    // };
+
+    const handleScroll = () => {
+        lastDistanceFromBottom.current = outputRef.current!.scrollHeight - outputRef.current!.clientHeight - outputRef.current!.scrollTop;
+    }
+
     const addOutputs = (text: string[], type = 'output') => {
         const timestamp = new Date().toLocaleTimeString();
         const prefix = type === 'command' ? `[${timestamp}] $ ` : `[${timestamp}] `;
-
         setOutput(prev => [...prev, ...text.map(t => `${prefix}${t}`)]);
     };
 
@@ -67,7 +73,7 @@ export function App() {
         if (e.key && e.key !== 'Enter') return;
         if (!command.trim()) return;
 
-        addOutput(command, 'command');
+        addOutputs([command], 'command');
 
         fetch(`http://${HOST}/execute`, { method: "POST", body: JSON.stringify({ command }) });
 
@@ -75,7 +81,7 @@ export function App() {
     };
 
     const handleQuickAction = async (action: typeof quickActions[number]["action"]) => {
-        addOutput(`Quick action: ${action}`, 'command');
+        addOutputs([`Quick action: ${action}`], 'command');
 
         try {
             const response = await fetch(`http://${HOST}/execute`, {
@@ -90,7 +96,7 @@ export function App() {
             //     addOutput(`Error: ${response.status} - ${response.statusText}`);
             //   }
         } catch (error) {
-            addOutput(`Network error: ${error}`);
+            addOutputs([`Network error: ${error}`]);
         }
     };
 
@@ -107,7 +113,7 @@ export function App() {
             <div className="flex-1 flex flex-col p-4 min-w-0">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4 border-b border-gray-700 pb-2">
-                    <h1 className="text-xl font-bold text-green-300">Remote Game Console Terminal</h1>
+                    <h1 className="text-xl font-bold text-green-300">Bakerysoft Server Console</h1>
                     <div className="flex items-center space-x-2">
                         <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
                         <span className="text-sm">{isConnected ? 'Connected' : 'Disconnected'}</span>
@@ -117,6 +123,7 @@ export function App() {
                 {/* Output Display */}
                 <div
                     ref={outputRef}
+                    onScroll={handleScroll}
                     className="flex-1 whitespace-pre bg-black border-2 border-gray-700 rounded-lg p-4 overflow-auto mb-4 text-sm leading-relaxed"
                 >
                     {output.map((line, index) => (
