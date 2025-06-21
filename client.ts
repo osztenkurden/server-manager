@@ -5,5 +5,5 @@ socket.on("connection", () => {
     console.log("CONNECTED")
 })
 socket.on("commandline", data => {
-    console.log(data);
+    process.stdout.write(data);
 })
