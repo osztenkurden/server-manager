@@ -36,6 +36,9 @@ export const startServer = (wss: SimpleWebSocketServer) => {
         nodeServer.process = spawn(linuxPath, ['-dedicated', '+map de_mirage'], { stdio: ['pipe', stdout, 'inherit'] });
 
         nodeServer.process.stdout?.pipe(process.stdout);
+        nodeServer.process.stdout?.on("data", () => {
+            nodeServer.process?.stdout?.push("\n");
+        });
 
         return;
     }
@@ -55,20 +58,21 @@ export const startServer = (wss: SimpleWebSocketServer) => {
         stdout
     });
 
-    // const reader = server.process.stdout.getReader();
+    const reader = server.process.stdout.getReader();
 
 
-    // reader.read().then(function processOutput({ done, value }): Promise<void> {
-    //     if (done) {
-    //         wss.send("commandline", "STREAM END");
-    //         console.log("STREAM END");
-    //         return Promise.resolve();
-    //     }
-    //     const str = decoder.decode(value);
-    //     wss.send("commandline", str);
-    //     return reader.read().then(processOutput);
+    reader.read().then(function processOutput({ done, value }): Promise<void> {
+        if (done) {
+            wss.send("commandline", "STREAM END");
+            console.log("STREAM END");
+            return Promise.resolve();
+        }
+        const str = decoder.decode(value);
+        wss.send("commandline", str);
 
-    // });
+        return reader.read().then(processOutput);
+
+    });
 
 
     //server.process.stdout.pipeTo(Writable.toWeb(process.stdout))
