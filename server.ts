@@ -37,7 +37,7 @@ export const startServer = (wss: SimpleWebSocketServer) => {
 
         nodeServer.process.stdout?.pipe(process.stdout);
         nodeServer.process.stdout?.on("data", () => {
-            nodeServer.process?.stdout?.push("\n");
+            process.stdout.write("\n");
         });
 
         return;
