@@ -3,7 +3,7 @@ import { Writable } from 'node:stream';
 import { spawn, type ChildProcess } from "node:child_process";
 const linuxPath = "./../.steam/steam/steamcmd/cs2-ds/game/bin/linuxsteamrt64/cs2";
 
-const stdout = "inherit" as const;
+const stdout = "pipe" as const;
 
 const server = {
     process: null as null | Bun.Subprocess<"pipe", typeof stdout>
@@ -13,9 +13,21 @@ const nodeServer = {
     process: null as null | ChildProcess
 }
 
+
+
 const SERVER_SPAWN = (process.argv[2] ?? 'NODE') as "NODE" | "BUN";
 
 export const startServer = (wss: SimpleWebSocketServer) => {
+    const decoder = new TextDecoder();
+    const wr = new WritableStream({
+        write: (chunk, controller) => {
+            const str = decoder.decode(chunk);
+            // process.stdout.write(`XD, ${str}`);
+            wss.send("commandline", str);
+        }
+    })
+
+
     if (SERVER_SPAWN === "NODE") {
         if (nodeServer.process) {
             console.warn("Server exists!");
@@ -43,14 +55,6 @@ export const startServer = (wss: SimpleWebSocketServer) => {
         stdout
     });
 
-    const decoder = new TextDecoder();
-    const wr = new WritableStream({
-        write: (chunk, controller) => {
-            const str = decoder.decode(chunk);
-            // process.stdout.write(`XD, ${str}`);
-            wss.send("commandline", str);
-        }
-    })
     // const reader = server.process.stdout.getReader();
 
 
