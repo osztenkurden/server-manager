@@ -13,7 +13,7 @@ const nodeServer = {
     process: null as null | ChildProcess
 }
 
-const SERVER_SPAWN = "NODE" as "NODE" | "BUN";
+const SERVER_SPAWN = process.argv[2] ?? 'NODE' as "NODE" | "BUN";
 
 export const startServer = (wss: SimpleWebSocketServer) => {
     if (SERVER_SPAWN === "NODE") {
@@ -21,7 +21,7 @@ export const startServer = (wss: SimpleWebSocketServer) => {
             console.warn("Server exists!");
             return;
         }
-        nodeServer.process = spawn(linuxPath, ['-dedicated', '+map de_mirage'], { shell: true });
+        nodeServer.process = spawn(linuxPath, ['-dedicated', '+map de_mirage'], { stdio: 'inherit' });
 
         return;
     }
