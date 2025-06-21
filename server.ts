@@ -36,8 +36,9 @@ export const startServer = (wss: SimpleWebSocketServer) => {
         nodeServer.process = spawn(linuxPath, ['-dedicated', '+map de_mirage'], { stdio: ['pipe', stdout, 'inherit'] });
 
         nodeServer.process.stdout?.pipe(process.stdout);
-        nodeServer.process.stdout?.on("data", () => {
-            process.stdout.write("\n");
+        nodeServer.process.stdout?.on("data", (data) => {
+            // process.stdout.write("EEEE", data, "ooooo");
+            console.log("EEE", data, "OOOO")
         });
 
         return;
