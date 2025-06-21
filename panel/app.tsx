@@ -2,7 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Play, Square, RotateCcw, Gamepad2, Flag } from 'lucide-react';
 import { SimpleWebSocket } from 'simple-websockets';
 
-const socket = new SimpleWebSocket<{ commandline: [string | string[]] }>("ws://172.30.0.244:5815");
+const HOST = "172.30.0.244:5815"; //window.location.host;
+
+const socket = new SimpleWebSocket<{ commandline: [string | string[]] }>(`ws://${HOST}`);
 
 socket.on("error", err => {
     console.log(err)
@@ -67,19 +69,7 @@ export function App() {
 
         addOutput(command, 'command');
 
-        // Simulate command processing
-        setTimeout(() => {
-            if (command.toLowerCase().includes('help')) {
-                addOutput('Available commands: start, stop, restart, status, clear, exit');
-            } else if (command.toLowerCase() === 'clear') {
-                setOutput(['$ Console cleared', '']);
-            } else if (command.toLowerCase().includes('status')) {
-                addOutput(`Status: ${isConnected ? 'Connected' : 'Disconnected'} | Game: Running`);
-            } else {
-                addOutput(`Executing: ${command}`);
-                addOutput('Command completed successfully');
-            }
-        }, 100);
+        fetch(`http://${HOST}/execute`, { method: "POST", body: JSON.stringify({ command }) });
 
         setCommand('');
     };
@@ -119,9 +109,9 @@ export function App() {
         { name: 'FINISH', icon: Flag, color: 'bg-purple-600 hover:bg-purple-700' }
     ] as const;
     return (
-        <div className="flex h-screen bg-gray-900 text-green-400 font-mono">
+        <div className="flex h-screen bg-gray-900 text-green-400 font-mono  overflow-hidden">
             {/* Main Terminal Area */}
-            <div className="flex-1 flex flex-col p-4">
+            <div className="flex-1 flex flex-col p-4 min-w-0">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4 border-b border-gray-700 pb-2">
                     <h1 className="text-xl font-bold text-green-300">Remote Game Console Terminal</h1>
@@ -134,7 +124,7 @@ export function App() {
                 {/* Output Display */}
                 <div
                     ref={outputRef}
-                    className="flex-1 whitespace-pre bg-black border-2 border-gray-700 rounded-lg p-4 overflow-y-auto mb-4 text-sm leading-relaxed"
+                    className="flex-1 whitespace-pre bg-black border-2 border-gray-700 rounded-lg p-4 overflow-auto mb-4 text-sm leading-relaxed"
                 >
                     {output.map((line, index) => (
                         <div key={index} className="mb-1">

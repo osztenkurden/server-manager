@@ -38,6 +38,7 @@ export const startServer = (wss: Bun.Server) => {
     if (!server.ws) server.ws = wss;
 
     server.process.stdout.pipeTo(wr);
+
 }
 
 export const stopServer = async () => {

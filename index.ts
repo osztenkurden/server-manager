@@ -55,6 +55,11 @@ const server = Bun.serve({
         "/dashboard": Dashboard,
         "/execute": {
             POST: async req => {
+                const res = new Response("ok", { status: 200 });
+
+                res.headers.set('Access-Control-Allow-Origin', '*');
+                res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+
                 const body = await req.json() as { command: string, args: any };
                 if (body.command) {
                     handleCommands(body.command, body.args);
