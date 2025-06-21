@@ -2,8 +2,10 @@ import type { SimpleWebSocketServer } from "simple-websockets/server";
 import { Writable } from 'node:stream';
 const linuxPath = "./../.steam/steam/steamcmd/cs2-ds/game/bin/linuxsteamrt64/cs2";
 
+const stdout = "inherit" as const;
+
 const server = {
-    process: null as null | Bun.Subprocess<"pipe", "pipe">
+    process: null as null | Bun.Subprocess<"pipe", typeof stdout>
 }
 
 export const startServer = (wss: SimpleWebSocketServer) => {
@@ -15,9 +17,8 @@ export const startServer = (wss: SimpleWebSocketServer) => {
     server.process = Bun.spawn([linuxPath, '-dedicated', '+map de_mirage'], {
         // cwd: serverPath,
         stdin: "pipe",
-        stdout: "pipe"
+        stdout
     });
-    const reader = server.process.stdout.getReader();
 
     const decoder = new TextDecoder();
     const wr = new WritableStream({
@@ -27,19 +28,20 @@ export const startServer = (wss: SimpleWebSocketServer) => {
             wss.send("commandline", str);
         }
     })
+    // const reader = server.process.stdout.getReader();
 
 
-    reader.read().then(function processOutput({ done, value }): Promise<void> {
-        if (done) {
-            wss.send("commandline", "STREAM END");
-            console.log("STREAM END");
-            return Promise.resolve();
-        }
-        const str = decoder.decode(value);
-        wss.send("commandline", str);
-        return reader.read().then(processOutput);
+    // reader.read().then(function processOutput({ done, value }): Promise<void> {
+    //     if (done) {
+    //         wss.send("commandline", "STREAM END");
+    //         console.log("STREAM END");
+    //         return Promise.resolve();
+    //     }
+    //     const str = decoder.decode(value);
+    //     wss.send("commandline", str);
+    //     return reader.read().then(processOutput);
 
-    });
+    // });
 
 
     //server.process.stdout.pipeTo(Writable.toWeb(process.stdout))
