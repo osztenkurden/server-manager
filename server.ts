@@ -1,5 +1,6 @@
 import type { SimpleWebSocketServer } from "simple-websockets/server";
 import { Writable } from 'node:stream';
+import { spawn, type ChildProcess } from "node:child_process";
 const linuxPath = "./../.steam/steam/steamcmd/cs2-ds/game/bin/linuxsteamrt64/cs2";
 
 const stdout = "inherit" as const;
@@ -8,7 +9,27 @@ const server = {
     process: null as null | Bun.Subprocess<"pipe", typeof stdout>
 }
 
+const nodeServer = {
+    process: null as null | ChildProcess
+}
+
+const SERVER_SPAWN = "NODE" as "NODE" | "BUN";
+
 export const startServer = (wss: SimpleWebSocketServer) => {
+    if (SERVER_SPAWN === "NODE") {
+        if (nodeServer.process) {
+            console.warn("Server exists!");
+            return;
+        }
+        nodeServer.process = spawn(linuxPath, ['-dedicated', '+map de_mirage'], { shell: true });
+
+        return;
+    }
+
+
+
+
+
     if (server.process) {
         console.warn("Server exists!");
         return;
@@ -51,6 +72,24 @@ export const startServer = (wss: SimpleWebSocketServer) => {
 }
 
 export const stopServer = async () => {
+    if (SERVER_SPAWN === "NODE") {
+        if (!nodeServer.process) {
+            console.warn("No server!");
+            return;
+        }
+        const { resolve, promise } = Promise.withResolvers();
+        nodeServer.process.on("exit", () => {
+            resolve();
+        });
+        writeToServer("quit");
+
+        await promise;
+
+        console.log("Server quited gracefully");
+        nodeServer.process = null;
+        return;
+
+    }
     if (!server.process) {
         console.warn("No server!");
         return;
