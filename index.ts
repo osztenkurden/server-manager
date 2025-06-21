@@ -2,7 +2,7 @@ import express from 'express';
 import http from 'http';
 import { SimpleWebSocketServer } from 'simple-websockets/server';
 import { startServer, stopServer, writeToServer } from './server';
-
+import { convertEventToMessage } from 'simple-websockets';
 const COMMON_COMMANDS = {
     "PAUSE": "mp_pause_match",
     "UNPAUSE": "mp_unpause_match",
@@ -32,43 +32,97 @@ const serverState = {
     isPaused: false,
 }
 
+const handleCommands = (command: string, args: Record<string, string> = {}) => {
 
-const app = express();
-app.use(express.json());
+    writeToServer(formatCommand(command, args))
+    switch (command) {
+        case "PAUSE":
+            serverState.isPaused = true;
+            break;
+        case "UNPAUSE":
+            serverState.isPaused = false;
+            break;
+        case "STOP_SERVER":
+            stopServer();
+            serverState.isOn = false;
+            break;
+        case "START_SERVER":
+            startServer(server);
+            serverState.isOn = true;
+            break;
+    }
+}
 
-
-const server = http.createServer(app);
-const wss = new SimpleWebSocketServer({ server });
-
-
-app.route("/")
-    .get((req, res) => { res.json(serverState) });
-
-app.route("/execute")
-    .post((req, res) => {
-        if (!req.body.command) {
-            res.sendStatus(200);
-            return;
+const server = Bun.serve({
+    port: 6815,
+    routes: {
+        "/": (req) => {
+            return Response.json(serverState);
+        },
+        "/execute": {
+            POST: async req => {
+                const body = await req.json() as { command: string, args: any };
+                if (body.command) {
+                    handleCommands(body.command, body.args);
+                }
+                return new Response("ok", { status: 200 });
+            }
         }
-        writeToServer(formatCommand(req.body.command, req.body.args))
-        switch (req.body.command) {
-            case "PAUSE":
-                serverState.isPaused = true;
-                break;
-            case "UNPAUSE":
-                serverState.isPaused = false;
-                break;
-            case "STOP_SERVER":
-                stopServer();
-                serverState.isOn = false;
-                break;
-            case "START_SERVER":
-                startServer(wss);
-                serverState.isOn = true;
-                break;
+    },
+    websocket: {
+        async message(ws, message) {
+        },
+        open(ws) {
+            ws.subscribe("stdout");
+        },
+    },
+    fetch(req) {
+        const success = server.upgrade(req);
+        if (success) {
+            return undefined;
         }
-        res.sendStatus(200);
-    })
+        return new Response("Not Found", { status: 404 });
+    },
+});
 
-server.listen(6815, () => { console.log("\n\n\n\nLISTENINTG\n\n\n\n") });
+
+
+// const app = express();
+// app.use(express.json());
+
+
+// // const server = http.createServer(app);
+// const wss = new SimpleWebSocketServer({ server });
+
+
+// app.route("/")
+//     .get((req, res) => { res.json(serverState) });
+
+// app.route("/execute")
+//     .post((req, res) => {
+//         if (!req.body.command) {
+//             res.sendStatus(200);
+//             return;
+//         }
+//         writeToServer(formatCommand(req.body.command, req.body.args))
+//         switch (req.body.command) {
+//             case "PAUSE":
+//                 serverState.isPaused = true;
+//                 break;
+//             case "UNPAUSE":
+//                 serverState.isPaused = false;
+//                 break;
+//             case "STOP_SERVER":
+//                 stopServer();
+//                 serverState.isOn = false;
+//                 break;
+//             case "START_SERVER":
+//                 startServer(wss);
+//                 serverState.isOn = true;
+//                 break;
+//         }
+//         res.sendStatus(200);
+//     })
+
+// server.listen(6815, () => { console.log("\n\n\n\nLISTENINTG\n\n\n\n") });
 
