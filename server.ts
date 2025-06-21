@@ -26,7 +26,7 @@ export const startServer = (wss: Bun.Server) => {
 
                 const lines = lastChunk.split("\n");
                 wss.publish("stdout", convertEventToMessage("commandline", lines.filter(Boolean)));
-
+                lastChunk = '';
             }
         }
     })

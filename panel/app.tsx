@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Play, Square, RotateCcw, Gamepad2, Flag } from 'lucide-react';
 import { SimpleWebSocket } from 'simple-websockets';
 
-const socket = new SimpleWebSocket<{ commandline: [string[]] }>("ws://172.30.0.244:5815");
+const socket = new SimpleWebSocket<{ commandline: [string | string[]] }>("ws://172.30.0.244:5815");
 
 socket.on("error", err => {
     console.log(err)
@@ -14,7 +14,7 @@ export function App() {
         ''
     ]);
     const [command, setCommand] = useState('');
-    const [isConnected, setIsConnected] = useState(false);
+    const [isConnected, setIsConnected] = useState(socket._socket.readyState);
     const outputRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -28,7 +28,8 @@ export function App() {
             setIsConnected(false);
         })
         socket.on("commandline", data => {
-            addOutputs(data);
+            if (typeof data === "string") addOutput(data)
+            else addOutputs(data);
         })
 
         return () => {
@@ -41,7 +42,12 @@ export function App() {
     // Auto-scroll to bottom when new output is added
     useEffect(() => {
         if (outputRef.current) {
-            outputRef.current.scrollTop = outputRef.current.scrollHeight;
+            const element = outputRef.current;
+            const isNearBottom = element.scrollHeight - element.scrollTop - element.clientHeight <= 200;
+
+            if (isNearBottom) {
+                element.scrollTop = element.scrollHeight;
+            }
         }
     }, [output]);
 
@@ -51,6 +57,7 @@ export function App() {
     const addOutputs = (text: string[], type = 'output') => {
         const timestamp = new Date().toLocaleTimeString();
         const prefix = type === 'command' ? `[${timestamp}] $ ` : `[${timestamp}] `;
+
         setOutput(prev => [...prev, ...text.map(t => `${prefix}${t}`)]);
     };
 
@@ -111,7 +118,6 @@ export function App() {
         { name: 'PLAY', icon: Gamepad2, color: 'bg-blue-600 hover:bg-blue-700' },
         { name: 'FINISH', icon: Flag, color: 'bg-purple-600 hover:bg-purple-700' }
     ] as const;
-
     return (
         <div className="flex h-screen bg-gray-900 text-green-400 font-mono">
             {/* Main Terminal Area */}
@@ -128,7 +134,7 @@ export function App() {
                 {/* Output Display */}
                 <div
                     ref={outputRef}
-                    className="flex-1 bg-black border-2 border-gray-700 rounded-lg p-4 overflow-y-auto mb-4 text-sm leading-relaxed"
+                    className="flex-1 whitespace-pre bg-black border-2 border-gray-700 rounded-lg p-4 overflow-y-auto mb-4 text-sm leading-relaxed"
                 >
                     {output.map((line, index) => (
                         <div key={index} className="mb-1">
