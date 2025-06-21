@@ -42,6 +42,7 @@ export const startServer = (wss: SimpleWebSocketServer) => {
             if (str === "\n") return;
             if (str.endsWith("\n")) return;
             nodeServer.process?.stdout?.push('\n');
+            console.log("WE PUSH TO NODE");
             // console.log("EEE", data.toString(), "OOOO")
         });
 
