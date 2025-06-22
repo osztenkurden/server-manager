@@ -74,8 +74,8 @@ export const updateServer = (wss: Bun.Server) => {
     write: (chunk) => {
       const str = decoder.decode(chunk);
       lastChunk += str;
-
-      if (!str.endsWith("\n")) {
+      // ANSI RESET SIGN
+      if (!str.endsWith("\n") && !str.endsWith("\u001B[0m")) {
         writeToServer("");
       } else {
         const lines = lastChunk.split("\n");
@@ -87,7 +87,7 @@ export const updateServer = (wss: Bun.Server) => {
 
   server.updateProcess = Bun.spawn(
     [
-      "./steamcmd",
+      OS === "WINDOWS" ? "./steamcmd" : "./steamcmd.sh",
       `+force_install_dir ${env.CS2_PATH}`,
       "+login anonymous",
       "+app_update 730",
