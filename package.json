@@ -9,6 +9,9 @@
     "bun-plugin-tailwind": "^0.0.15",
     "tailwindcss": "^4.1.10"
   },
+  "scripts": {
+    "pack": "tar --exclude=node_modules --exclude=EXPORT --exclude=.env --exclude=export.tar.gz -czf export.tar.gz ./*"
+  },
   "peerDependencies": {
     "typescript": "^5"
   },

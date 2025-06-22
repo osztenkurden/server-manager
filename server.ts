@@ -2,6 +2,8 @@ import { convertEventToMessage } from "simple-websockets";
 import { env } from "./env";
 import os from "os";
 import path from "path";
+import { cachedChunk } from ".";
+import { DEMO_PREFIX } from "./demo";
 
 const OS = os.platform() === "win32" ? "WINDOWS" : "LINUX";
 
@@ -25,7 +27,6 @@ const getTimeStamp = () => {
     x.getUTCDate()
   )}_${padNo(x.getUTCHours())}-${padNo(x.getUTCMinutes())}`;
 };
-const DEMO_PREFIX = `MATCH_`;
 
 export const startGame = async () => {
   const timestamp = getTimeStamp();
@@ -63,7 +64,10 @@ export const sendLine = (line: string | string[], type = "stdout") => {
   );
 };
 
-const getWritableStream = (type = "stdout") => {
+const getWritableStream = (
+  type: "stdout" | "stderr" = "stdout",
+  writeChunkCallback?: (chunk: string) => void
+) => {
   let lastChunk = "";
   const decoder = new TextDecoder();
   const wr = new WritableStream({
@@ -72,12 +76,13 @@ const getWritableStream = (type = "stdout") => {
       lastChunk += str;
       // ANSI RESET SIGN
       if (!str.endsWith("\n")) {
-        writeToServer("");
+        writeToServer(" \n");
       } else {
         const lines = lastChunk.split("\n");
         sendLine(lines.filter(Boolean), type);
         lastChunk = "";
       }
+      writeChunkCallback?.(lastChunk);
     },
   });
 
@@ -124,7 +129,9 @@ export const startServer = (wss: Bun.Server) => {
     return;
   }
 
-  const stdoutWr = getWritableStream();
+  const stdoutWr = getWritableStream("stdout", (chunk) => {
+    cachedChunk.server = chunk;
+  });
   const stderrWr = getWritableStream("stderr");
 
   server.process = Bun.spawn(

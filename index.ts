@@ -7,6 +7,7 @@ import {
 } from "./server";
 import Dashboard from "./panel/index.html";
 import { initiatieResourceUsageLoop } from "./os";
+import { getDemoList, uploadDemoFiles } from "./demo";
 
 const COMMON_COMMANDS = {
   PAUSE: "mp_pause_match",
@@ -18,6 +19,10 @@ const COMMON_COMMANDS = {
   UPDATE_SERVER: "",
   TV_STOP: "tv_stoprecord",
   START_SERVER: "",
+};
+
+export const cachedChunk = {
+  server: "",
 };
 
 export type COMMON_COMMANDS = keyof typeof COMMON_COMMANDS;
@@ -77,6 +82,26 @@ const server = Bun.serve({
     "/status": (req) => {
       return Response.json(serverState);
     },
+    "/debug": {
+      GET: async (req) => {
+        return Response.json(cachedChunk);
+      },
+    },
+    "/demos": {
+      GET: async (req) => {
+        const files = await getDemoList();
+
+        return Response.json(files);
+      },
+    },
+    "/upload": {
+      POST: async (req) => {
+        const body = await req.json();
+        await uploadDemoFiles(body.fileName, body.playedAt);
+
+        return Response.json({ ok: true });
+      },
+    },
     "/dashboard": Dashboard,
     "/execute": {
       POST: async (req) => {
@@ -114,5 +139,9 @@ const server = Bun.serve({
 });
 
 initiatieResourceUsageLoop(server);
+
+setInterval(() => {
+  writeToServer(" ");
+}, 5000);
 
 console.log(`Listening on http://${server.hostname}:${server.port}/dashboard`);

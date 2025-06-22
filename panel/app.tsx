@@ -12,6 +12,8 @@ import { SimpleWebSocket } from "simple-websockets";
 
 import type { COMMON_COMMANDS } from "./../index";
 import type { ResourceUsage } from "../os";
+import { HOST } from "./api";
+import UploadFilesModal from "./upload";
 
 const secondsToTime = (seconds: number) => {
   const hours = Math.floor(seconds / 3600);
@@ -28,7 +30,6 @@ const secondsToTime = (seconds: number) => {
 };
 
 // const HOST = "172.30.0.244:5815"; //window.location.host;
-const HOST = window.location.host;
 
 type OutputType = "stdout" | "stderr" | "command";
 
@@ -306,6 +307,7 @@ export function App() {
               </button>
             );
           })}
+          <UploadFilesModal />
         </div>
 
         {/* Connection Status */}
