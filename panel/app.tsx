@@ -30,13 +30,20 @@ const secondsToTime = (seconds: number) => {
 // const HOST = "172.30.0.244:5815"; //window.location.host;
 const HOST = window.location.host;
 
+type OutputType = "stdout" | "stderr" | "command";
+
 const socket = new SimpleWebSocket<{
-  commandline: [string | string[]];
+  commandline: [string | string[], type: OutputType];
   resources: [ResourceUsage];
 }>(`ws://${HOST}`);
 
 socket.on("error", (err) => {
   console.log(err);
+});
+
+const textToLine = (text: string, type: OutputType = "stdout") => ({
+  content: text,
+  type,
 });
 
 export function App() {
@@ -46,10 +53,11 @@ export function App() {
     freeMemory: 0,
     uptime: 0,
   });
-  const [output, setOutput] = useState([
-    "$ Game console remote terminal initialized...",
-    "",
-  ]);
+  const [output, setOutput] = useState(
+    ["$ Game console remote terminal initialized...", ""].map((x) =>
+      textToLine(x)
+    )
+  );
   const [command, setCommand] = useState("");
   const [isConnected, setIsConnected] = useState(
     socket._socket.readyState === 1
@@ -67,9 +75,9 @@ export function App() {
     socket.on("disconnect", () => {
       setIsConnected(false);
     });
-    socket.on("commandline", (data) => {
-      if (typeof data === "string") addOutputs([data]);
-      else addOutputs(data);
+    socket.on("commandline", (data, type) => {
+      if (typeof data === "string") addOutputs([data], type);
+      else addOutputs(data, type);
     });
 
     socket.on("resources", (data) => {
@@ -107,10 +115,13 @@ export function App() {
       outputRef.current!.scrollTop;
   };
 
-  const addOutputs = (text: string[], type = "output") => {
+  const addOutputs = (text: string[], type: OutputType = "stdout") => {
     const timestamp = new Date().toLocaleTimeString();
     const prefix = type === "command" ? `[${timestamp}] $ ` : `[${timestamp}] `;
-    setOutput((prev) => [...prev, ...text.map((t) => `${prefix}${t}`)]);
+    setOutput((prev) => [
+      ...prev,
+      ...text.map((t) => textToLine(`${prefix}${t}`, type)),
+    ]);
   };
   const ignoredCommands = ["help", "clear", "status"];
   const handleCommand = (e: any) => {
@@ -176,19 +187,19 @@ export function App() {
     },
     {
       name: "RESTART GAME",
-      action: "STOP_SERVER",
+      action: "RESTART_GAME",
       icon: RotateCcw,
       color: "bg-yellow-600 hover:bg-yellow-700",
     },
     {
       name: "PAUSE",
-      action: "STOP_SERVER",
+      action: "PAUSE",
       icon: Pause,
       color: "bg-blue-600 hover:bg-blue-700",
     },
     {
       name: "UNPAUSE",
-      action: "STOP_SERVER",
+      action: "UNPAUSE",
       icon: Play,
       color: "bg-purple-600 hover:bg-purple-700",
     },
@@ -238,8 +249,11 @@ export function App() {
           className="flex-1 whitespace-pre bg-black border-2 border-gray-700 rounded-lg p-4 overflow-auto mb-4 text-sm leading-relaxed"
         >
           {output.map((line, index) => (
-            <div key={index} className="mb-1">
-              {line}
+            <div
+              key={index}
+              className={`mb-1 ${line.type === "stderr" ? "text-red-500" : ""}`}
+            >
+              {line.content}
             </div>
           ))}
           <div className="inline">
@@ -255,7 +269,7 @@ export function App() {
             type="text"
             value={command}
             onChange={(e) => setCommand(e.target.value)}
-            onKeyPress={(e) => {
+            onKeyDown={(e) => {
               if (e.key === "Enter") {
                 handleCommand(e);
               }

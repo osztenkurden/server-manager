@@ -13,8 +13,8 @@ const CS2_SERVER_PATH = {
 const CFG_PATH = path.join(env.CS2_PATH, "./game/csgo/cfg");
 
 const server = {
-  process: null as null | Bun.Subprocess<"pipe", "pipe">,
-  updateProcess: null as null | Bun.Subprocess<"pipe", "pipe">,
+  process: null as null | Bun.Subprocess<"pipe", "pipe", "pipe">,
+  updateProcess: null as null | Bun.Subprocess<"pipe", "pipe", "pipe">,
   ws: null as null | Bun.Server,
 };
 const getTimeStamp = () => {
@@ -50,24 +50,20 @@ export const logToAll = (line: string) => {
   sendLine(line);
 };
 
-export const sendLine = (line: string | string[]) => {
+export const sendLine = (line: string | string[], type = "stdout") => {
   if (!server.ws) return;
 
   server.ws.publish(
     "stdout",
     convertEventToMessage(
       "commandline",
-      typeof line === "string" ? [line] : line
+      typeof line === "string" ? [line] : line,
+      type
     )
   );
 };
 
-export const updateServer = (wss: Bun.Server) => {
-  if (server.process || server.updateProcess) {
-    logToAll("Server is running or is being updated!");
-    return;
-  }
-
+const getWritableStream = (type = "stdout") => {
   let lastChunk = "";
   const decoder = new TextDecoder();
   const wr = new WritableStream({
@@ -79,11 +75,23 @@ export const updateServer = (wss: Bun.Server) => {
         writeToServer("");
       } else {
         const lines = lastChunk.split("\n");
-        sendLine(lines.filter(Boolean));
+        sendLine(lines.filter(Boolean), type);
         lastChunk = "";
       }
     },
   });
+
+  return wr;
+};
+
+export const updateServer = (wss: Bun.Server) => {
+  if (server.process || server.updateProcess) {
+    logToAll("Server is running or is being updated!");
+    return;
+  }
+
+  const stdoutWr = getWritableStream();
+  const stderrWr = getWritableStream("stderr");
 
   server.updateProcess = Bun.spawn(
     [
@@ -96,12 +104,14 @@ export const updateServer = (wss: Bun.Server) => {
     {
       stdin: "pipe",
       stdout: "pipe",
+      stderr: "pipe",
       cwd: env.STEAMCMD_PATH,
     }
   );
   if (!server.ws) server.ws = wss;
 
-  server.updateProcess.stdout.pipeTo(wr);
+  server.updateProcess.stdout.pipeTo(stdoutWr);
+  server.updateProcess.stderr.pipeTo(stderrWr);
   server.updateProcess.exited.then(() => {
     logToAll("Update finalised");
     server.updateProcess = null;
@@ -113,33 +123,23 @@ export const startServer = (wss: Bun.Server) => {
     logToAll("Server exists or is being updated!");
     return;
   }
-  let lastChunk = "";
-  const decoder = new TextDecoder();
-  const wr = new WritableStream({
-    write: (chunk) => {
-      const str = decoder.decode(chunk);
-      lastChunk += str;
 
-      if (!str.endsWith("\n")) {
-        writeToServer("");
-      } else {
-        const lines = lastChunk.split("\n");
-        sendLine(lines.filter(Boolean));
-        lastChunk = "";
-      }
-    },
-  });
+  const stdoutWr = getWritableStream();
+  const stderrWr = getWritableStream("stderr");
+
   server.process = Bun.spawn(
     ["./cs2", "-dedicated", ...(env.CS2_SERVER_ARGS?.split(",") ?? [])],
     {
       stdin: "pipe",
       stdout: "pipe",
+      stderr: "pipe",
       cwd: CS2_SERVER_PATH[OS],
     }
   );
   if (!server.ws) server.ws = wss;
 
-  server.process.stdout.pipeTo(wr);
+  server.process.stdout.pipeTo(stdoutWr);
+  server.process.stderr.pipeTo(stderrWr);
 };
 
 export const stopServer = async () => {

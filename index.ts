@@ -72,6 +72,7 @@ const handleCommands = (command: string, args: Record<string, string> = {}) => {
 
 const server = Bun.serve({
   port: 5815,
+  hostname: "0.0.0.0",
   routes: {
     "/status": (req) => {
       return Response.json(serverState);
@@ -107,6 +108,7 @@ const server = Bun.serve({
     message() {},
     open(ws) {
       ws.subscribe("stdout");
+      ws.subscribe("stderr");
     },
   },
 });
