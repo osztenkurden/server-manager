@@ -72,10 +72,10 @@ export const updateServer = (wss: Bun.Server) => {
   const decoder = new TextDecoder();
   const wr = new WritableStream({
     write: (chunk) => {
-      const str = decoder.decode(chunk);
+      const str = decoder.decode(chunk).replaceAll("\u001B[0m", "");
       lastChunk += str;
       // ANSI RESET SIGN
-      if (!str.endsWith("\n") && !str.endsWith("\u001B[0m")) {
+      if (!str.endsWith("\n")) {
         writeToServer("");
       } else {
         const lines = lastChunk.split("\n");
