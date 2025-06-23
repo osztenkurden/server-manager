@@ -13,4 +13,4 @@ setInterval(() => {
   writeToSteamCMD(" ");
 }, 5000);
 
-console.log(`Listening on http://${server.hostname}:${server.port}/dashboard in mode`, process.env.NODE_ENV);
+console.log(`Listening on http://${server.hostname}:${server.port}/ in mode`, process.env.NODE_ENV);
