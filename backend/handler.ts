@@ -1,19 +1,7 @@
+import { COMMON_COMMANDS } from "../shared";
 import { writeToServer, startGame, stopServer, startServer, updateServer } from "./cs2server";
 import { server, serverState } from "./server";
 
-export const COMMON_COMMANDS = {
-    PAUSE: "mp_pause_match",
-    UNPAUSE: "mp_unpause_match",
-    REPLAY_FROM_ROUND: "mp_backup_restore_load_file {{filename}}",
-    START_MATCH: "",
-    RESTART_GAME: "mp_restartgame 1",
-    STOP_SERVER: "quit",
-    UPDATE_SERVER: "",
-    TV_STOP: "tv_stoprecord",
-    START_SERVER: "",
-};
-
-export type COMMON_COMMANDS = keyof typeof COMMON_COMMANDS;
 
 const formatCommand = (command: string, args: Record<string, string> = {}) => {
     let currentCommand =
