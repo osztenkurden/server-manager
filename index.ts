@@ -97,9 +97,8 @@ class AuthError extends Error {
   }
 }
 
-const checkAuth = (req: Bun.BunRequest | Request, log = false) => {
+const checkAuth = (req: Bun.BunRequest | Request) => {
   const auth = req.headers.get("authorization");
-  if (log) console.log(req.headers.toJSON());
   if (auth !== env.ACCESS_KEY) {
     throw new AuthError("Wrong auth key");
   }
@@ -188,4 +187,4 @@ setInterval(() => {
   writeToSteamCMD(" ");
 }, 5000);
 
-console.log(`Listening on http://${server.hostname}:${server.port}/dashboard DEVELOPMENT`, process.env.NODE_ENV !== 'production');
+console.log(`Listening on http://${server.hostname}:${server.port}/dashboard in mode`, process.env.NODE_ENV);

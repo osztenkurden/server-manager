@@ -50,7 +50,6 @@ export default function UploadFilesModal({ accessKey }: { accessKey: string }) {
   };
 
   const handlePlayedAtChange = (filename: string, newDate: string) => {
-    console.log(new Date(newDate), new Date());
     setFiles((prevFiles) =>
       prevFiles.map((file) =>
         file.file === filename
@@ -74,7 +73,6 @@ export default function UploadFilesModal({ accessKey }: { accessKey: string }) {
     for (const fileName of selectedFiles) {
       const playedAt = files.find((file) => file.file === fileName)?.playedAt;
       if (!playedAt) {
-        console.log("No tiemstamp for ", fileName);
         continue;
       }
       try {

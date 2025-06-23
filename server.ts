@@ -4,6 +4,7 @@ import os from "os";
 import path from "path";
 import { cachedChunk } from ".";
 import { DEMO_PREFIX } from "./demo";
+import type { OutputType } from "./panel/api";
 
 const OS = os.platform() === "win32" ? "WINDOWS" : "LINUX";
 
@@ -51,7 +52,7 @@ export const logToAll = (line: string) => {
   sendLine(line);
 };
 
-export const sendLine = (line: string | string[], type = "stdout") => {
+export const sendLine = (line: string | string[], type: OutputType = "stdout") => {
   if (!server.ws) return;
 
   server.ws.publish(
