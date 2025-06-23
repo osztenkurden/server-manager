@@ -5,7 +5,7 @@ import {
 import { SimpleWebSocket } from "simple-websockets";
 
 import type { ResourceUsage } from "../backend/os";
-import { HOST, quickActions, secondsToTime, textToLine, type OutputType } from "./api";
+import { quickActions, secondsToTime, textToLine, type OutputType } from "./api";
 import UploadFilesModal from "./upload";
 import ky from "ky";
 import { ActionButton } from "./button";
@@ -29,9 +29,9 @@ export function Terminal({ accessKey }: { accessKey: string }) {
 
     useEffect(() => {
         const socket = new SimpleWebSocket<{
-            commandline: [string | string[], type: OutputType];
-            resources: [ResourceUsage];
-        }>(`ws://${HOST}`, { autoReconnect: true });
+            commandline: [lines: string | string[], type: OutputType];
+            resources: [usage: ResourceUsage];
+        }>(`${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}`, { autoReconnect: true });
 
         socket.on("error", (err) => {
             console.log(err);

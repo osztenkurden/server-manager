@@ -1,10 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Lock, Server, AlertCircle } from 'lucide-react';
-import { HOST } from './api';
+import { useState, useEffect } from 'react';
+import { Lock, AlertCircle } from 'lucide-react';
 import { Terminal } from './app';
 import ky from 'ky';
-
-const wait = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 const AuthPage = () => {
     const [accessKey, setAccessKey] = useState(localStorage.getItem('access_key') ?? '');

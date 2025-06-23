@@ -1,6 +1,5 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Upload, X } from "lucide-react";
-import { HOST } from "./api";
 import { ActionButton } from "./button";
 import ky from "ky";
 

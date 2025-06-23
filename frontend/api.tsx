@@ -9,8 +9,6 @@ import {
 } from "lucide-react";
 import type { COMMON_COMMANDS } from "../backend/handler";
 
-export const HOST = window.location.host;
-
 
 //UTILS
 
