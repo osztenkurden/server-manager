@@ -95,7 +95,7 @@ const AuthPage = () => {
                     </div>
 
                     {/* Auth Form */}
-                    <div className="space-y-4">
+                    <form onSubmit={handleLogin} className="space-y-4">
                         <div>
                             <label htmlFor="accessKey" className="block text-sm font-medium text-green-300 mb-2">
                                 Access Key
@@ -105,11 +105,6 @@ const AuthPage = () => {
                                 type="password"
                                 value={accessKey}
                                 onChange={(e) => setAccessKey(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        handleLogin(e);
-                                    }
-                                }}
                                 className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-3 text-green-400 focus:outline-none focus:border-green-400 transition-colors"
                                 placeholder="Enter your access key..."
                                 autoComplete="off"
@@ -127,7 +122,7 @@ const AuthPage = () => {
 
                         {/* Login Button */}
                         <button
-                            onClick={handleLogin}
+                            type="submit"
                             disabled={isLoading}
                             className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed px-4 py-3 rounded text-white font-semibold transition-colors flex items-center justify-center space-x-2"
                         >
@@ -143,7 +138,7 @@ const AuthPage = () => {
                                 </>
                             )}
                         </button>
-                    </div>
+                    </form>
 
                     {/* Footer */}
                     <div className="mt-8 text-center">

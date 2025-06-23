@@ -204,7 +204,7 @@ export function Terminal({ accessKey }: { accessKey: string }) {
                     {quickActions.map((action) => {
                         const IconComponent = action.icon;
                         return (
-                            <ActionButton color={action.color} onClick={() => handleQuickAction(action.action)} >
+                            <ActionButton key={action.action} color={action.color} onClick={() => handleQuickAction(action.action)} >
                                 <IconComponent size={18} />
                                 <span>{action.name}</span>
                             </ActionButton>
