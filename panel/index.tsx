@@ -1,8 +1,8 @@
 import "./index.css";
 import { createRoot } from "react-dom/client";
-import { App } from "./app.tsx";
+import AuthPage from "./auth.tsx";
 
 document.addEventListener("DOMContentLoaded", () => {
     const root = createRoot(document.getElementById("root")!);
-    root.render(<App />);
+    root.render(<AuthPage />);
 });

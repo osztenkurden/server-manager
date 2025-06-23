@@ -165,4 +165,10 @@ export const stopServer = async () => {
 
 export const writeToServer = (text: string) => {
   server.process?.stdin.write(`${text}\n`);
+  server.process?.stdin.flush();
+};
+
+export const writeToSteamCMD = (text: string) => {
+  server.updateProcess?.stdin.write(`${text}\n`);
+  server.updateProcess?.stdin.flush();
 };

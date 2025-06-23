@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { Upload, X } from "lucide-react";
 import { HOST } from "./api";
+import { ActionButton } from "./button";
+import ky from "ky";
 
 type DemoData = { file: string; updatedAt: number; createdAt: number };
 type DemoDataExtended = DemoData & { playedAt: number };
 
-export default function UploadFilesModal() {
+export default function UploadFilesModal({ accessKey }: { accessKey: string }) {
   const [showModal, setShowModal] = useState(false);
   const [files, setFiles] = useState<DemoDataExtended[]>([]);
   const [selectedFiles, setSelectedFiles] = useState(new Set<string>());
@@ -20,26 +22,16 @@ export default function UploadFilesModal() {
   const fetchFiles = async () => {
     setIsLoadingFiles(true);
     try {
-      const response = await fetch(`http://${HOST}/demos`);
-      if (response.ok) {
-        const fileData = (await response.json()) as DemoData[];
-        const filesWithPlayedAt = fileData.map((file) => ({
-          ...file,
-          playedAt: file.createdAt,
-        }));
-        setFiles(filesWithPlayedAt);
-      } else {
-        if (setProgressState) {
-          setProgressState(
-            `Error fetching files: ${response.status} - ${response.statusText}`,
-            "error"
-          );
-        }
-      }
+      const fileData = await ky.get('/demos', { headers: { authorization: accessKey } }).json<DemoData[]>()
+      const filesWithPlayedAt = fileData.map((file) => ({
+        ...file,
+        playedAt: file.createdAt,
+      }));
+      setFiles(filesWithPlayedAt);
     } catch (error: any) {
       if (setProgressState) {
         setProgressState(
-          `Network error fetching files: ${error.message}`,
+          `Error fetching files: ${error.message}`,
           "error"
         );
       }
@@ -86,26 +78,8 @@ export default function UploadFilesModal() {
         continue;
       }
       try {
-        const response = await fetch(`http://${HOST}/upload`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ fileName, playedAt }),
-        });
-
-        if (response.ok) {
-          if (setProgressState) {
-            setProgressState(`✓ Uploaded: ${fileName}`, "success");
-          }
-        } else {
-          if (setProgressState) {
-            setProgressState(
-              `✗ Failed to upload: ${fileName} - ${response.status}`,
-              "error"
-            );
-          }
-        }
+        await ky.post("/upload", { json: { fileName, playedAt }, headers: { authorization: accessKey } })
+        setProgressState(`✓ Uploaded: ${fileName}`, "success");
       } catch (error: any) {
         if (setProgressState) {
           setProgressState(
@@ -145,17 +119,14 @@ export default function UploadFilesModal() {
   return (
     <>
       {/* Trigger Button */}
-      <button
-        onClick={openModal}
-        className="w-full cursor-pointer bg-cyan-600 hover:bg-cyan-700 text-white py-3 px-4 rounded-lg flex items-center justify-center space-x-2 transition-colors font-semibold"
-      >
+      <ActionButton color="bg-cyan-600 hover:bg-cyan-700" onClick={openModal}>
         <Upload size={18} />
         <span>UPLOAD FILES</span>
-      </button>
+      </ActionButton>
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 font-mono">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 font-mono m-0">
           <div className="bg-gray-800 rounded-lg p-6 w-4/5 max-w-4xl max-h-4/5 overflow-hidden flex flex-col text-green-400">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-green-300">
@@ -265,11 +236,10 @@ export default function UploadFilesModal() {
                     <button
                       onClick={handleUploadFiles}
                       disabled={selectedFiles.size === 0 || isUploading}
-                      className={`px-4 py-2 rounded text-white font-semibold transition-colors ${
-                        selectedFiles.size === 0 || isUploading
-                          ? "bg-gray-500 cursor-not-allowed"
-                          : "bg-green-600 hover:bg-green-700"
-                      }`}
+                      className={`px-4 py-2 rounded text-white font-semibold transition-colors ${selectedFiles.size === 0 || isUploading
+                        ? "bg-gray-500 cursor-not-allowed"
+                        : "bg-green-600 hover:bg-green-700"
+                        }`}
                     >
                       {isUploading
                         ? "Uploading..."

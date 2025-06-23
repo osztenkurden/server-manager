@@ -31,7 +31,7 @@ export const uploadDemoFiles = async (fileName: string, playedAt: number) => {
     method: "POST",
     headers: {
       fileName,
-      authorization: env.AUTHORIZATION,
+      authorization: env.DEMO_UPLOAD_AUTHORIZATION,
       matchtime: `${playedAt}`,
     },
     body: file.stream(),
