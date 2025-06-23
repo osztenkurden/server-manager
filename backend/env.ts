@@ -7,6 +7,7 @@ const envSchema = z.object({
   DEMO_UPLOAD_AUTHORIZATION: z.string(),
   ACCESS_KEY: z.string(),
   DEMO_UPLOAD_API: z.string(),
+  PORT: z.coerce.number().optional()
 });
 
 const env = envSchema.parse(process.env);

@@ -76,7 +76,7 @@ export default function UploadFilesModal({ accessKey }: { accessKey: string }) {
         continue;
       }
       try {
-        await ky.post("/upload", { json: { fileName, playedAt }, headers: { authorization: accessKey } })
+        await ky.post("/demos", { json: { fileName, playedAt }, headers: { authorization: accessKey } })
         setProgressState(`✓ Uploaded: ${fileName}`, "success");
       } catch (error: any) {
         if (setProgressState) {

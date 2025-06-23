@@ -2,9 +2,9 @@ import { convertEventToMessage } from "simple-websockets";
 import { env } from "./env";
 import os from "os";
 import path from "path";
-import { cachedChunk } from ".";
+import { cachedChunk } from "./server";
 import { DEMO_PREFIX } from "./demo";
-import type { OutputType } from "./panel/api";
+import type { OutputType } from "../frontend/api";
 
 const OS = os.platform() === "win32" ? "WINDOWS" : "LINUX";
 

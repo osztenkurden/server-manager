@@ -4,7 +4,7 @@ import {
 } from "lucide-react";
 import { SimpleWebSocket } from "simple-websockets";
 
-import type { ResourceUsage } from "../os";
+import type { ResourceUsage } from "../backend/os";
 import { HOST, quickActions, secondsToTime, textToLine, type OutputType } from "./api";
 import UploadFilesModal from "./upload";
 import ky from "ky";
