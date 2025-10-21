@@ -12,6 +12,7 @@ export default function UploadFilesModal({ accessKey }: { accessKey: string }) {
   const [selectedFiles, setSelectedFiles] = useState(new Set<string>());
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   const [progressState, _setProgressState] = useState([] as string[]);
   const setProgressState = (msg: string, state: string) => {
@@ -21,7 +22,9 @@ export default function UploadFilesModal({ accessKey }: { accessKey: string }) {
   const fetchFiles = async () => {
     setIsLoadingFiles(true);
     try {
-      const fileData = await ky.get('/demos', { headers: { authorization: accessKey } }).json<DemoData[]>()
+      const fileData = await ky
+        .get("/demos", { headers: { authorization: accessKey } })
+        .json<DemoData[]>();
       const filesWithPlayedAt = fileData.map((file) => ({
         ...file,
         playedAt: file.createdAt,
@@ -29,10 +32,7 @@ export default function UploadFilesModal({ accessKey }: { accessKey: string }) {
       setFiles(filesWithPlayedAt);
     } catch (error: any) {
       if (setProgressState) {
-        setProgressState(
-          `Error fetching files: ${error.message}`,
-          "error"
-        );
+        setProgressState(`Error fetching files: ${error.message}`, "error");
       }
     }
     setIsLoadingFiles(false);
@@ -57,6 +57,36 @@ export default function UploadFilesModal({ accessKey }: { accessKey: string }) {
       )
     );
   };
+  const handleRemoveFiles = async () => {
+    if (selectedFiles.size === 0) return;
+
+    setIsRemoving(true);
+    setProgressState(
+      `Starting removal of ${selectedFiles.size} files...`,
+      "info"
+    );
+
+    for (const fileName of selectedFiles) {
+      try {
+        await ky.delete("/demos", {
+          json: { fileName },
+          headers: { authorization: accessKey },
+        });
+        setProgressState(`✓ Removed: ${fileName}`, "success");
+      } catch (error: any) {
+        if (setProgressState) {
+          setProgressState(
+            `✗ Error removing ${fileName}: ${error.message}`,
+            "error"
+          );
+        }
+      }
+    }
+    await fetchFiles();
+    setIsRemoving(false);
+    setSelectedFiles(new Set());
+    setProgressState("Removal process completed", "info");
+  };
 
   const handleUploadFiles = async () => {
     if (selectedFiles.size === 0) return;
@@ -75,7 +105,10 @@ export default function UploadFilesModal({ accessKey }: { accessKey: string }) {
         continue;
       }
       try {
-        await ky.post("/demos", { json: { fileName, playedAt }, headers: { authorization: accessKey } })
+        await ky.post("/demos", {
+          json: { fileName, playedAt },
+          headers: { authorization: accessKey },
+        });
         setProgressState(`✓ Uploaded: ${fileName}`, "success");
       } catch (error: any) {
         if (setProgressState) {
@@ -118,7 +151,7 @@ export default function UploadFilesModal({ accessKey }: { accessKey: string }) {
       {/* Trigger Button */}
       <ActionButton color="bg-cyan-600 hover:bg-cyan-700" onClick={openModal}>
         <Upload size={18} />
-        <span>UPLOAD FILES</span>
+        <span>MANAGE DEMOS</span>
       </ActionButton>
 
       {/* Modal */}
@@ -127,11 +160,11 @@ export default function UploadFilesModal({ accessKey }: { accessKey: string }) {
           <div className="bg-gray-800 rounded-lg p-6 w-4/5 max-w-4xl max-h-4/5 overflow-hidden flex flex-col text-green-400">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-green-300">
-                Upload Game Files to Database
+                Manage Demo Files
               </h2>
               <button
                 onClick={closeModal}
-                className="text-gray-400 hover:text-white"
+                className="text-gray-400 hover:text-white  cursor-pointer"
               >
                 <X size={24} />
               </button>
@@ -216,7 +249,7 @@ export default function UploadFilesModal({ accessKey }: { accessKey: string }) {
                         setSelectedFiles(new Set(files.map((f) => f.file)));
                       }
                     }}
-                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded transition-colors"
+                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded transition-colors cursor-pointer"
                   >
                     {selectedFiles.size === files.length
                       ? "Deselect All"
@@ -226,21 +259,39 @@ export default function UploadFilesModal({ accessKey }: { accessKey: string }) {
                   <div className="flex space-x-2">
                     <button
                       onClick={closeModal}
-                      className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded transition-colors"
+                      className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded transition-colors cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleUploadFiles}
-                      disabled={selectedFiles.size === 0 || isUploading}
-                      className={`px-4 py-2 rounded text-white font-semibold transition-colors ${selectedFiles.size === 0 || isUploading
-                        ? "bg-gray-500 cursor-not-allowed"
-                        : "bg-green-600 hover:bg-green-700"
-                        }`}
+                      disabled={
+                        selectedFiles.size === 0 || isUploading || isRemoving
+                      }
+                      className={`px-4 py-2 rounded text-white font-semibold transition-colors cursor-pointer ${
+                        selectedFiles.size === 0 || isUploading || isRemoving
+                          ? "bg-gray-500 cursor-not-allowed"
+                          : "bg-green-600 hover:bg-green-700"
+                      }`}
                     >
                       {isUploading
                         ? "Uploading..."
                         : `Upload ${selectedFiles.size} File(s)`}
+                    </button>
+                    <button
+                      onClick={handleRemoveFiles}
+                      disabled={
+                        selectedFiles.size === 0 || isRemoving || isUploading
+                      }
+                      className={`px-4 py-2 rounded text-white font-semibold transition-colors cursor-pointer ${
+                        selectedFiles.size === 0 || isRemoving || isUploading
+                          ? "bg-gray-500 cursor-not-allowed"
+                          : "bg-red-600 hover:bg-red-700"
+                      }`}
+                    >
+                      {isRemoving
+                        ? "Removing..."
+                        : `Remove ${selectedFiles.size} File(s)`}
                     </button>
                   </div>
                 </div>
@@ -248,7 +299,7 @@ export default function UploadFilesModal({ accessKey }: { accessKey: string }) {
                 {progressState.length > 0 && (
                   <div className="border-t border-gray-600 pt-4">
                     <h3 className="text-sm font-semibold text-green-300 mb-2">
-                      Upload Logs
+                      Manage Logs
                     </h3>
                     <div className="bg-gray-900 rounded p-3 max-h-32 overflow-y-auto">
                       {progressState.map((log, index) => (

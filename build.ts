@@ -2,13 +2,17 @@
 
 import { $ } from "bun";
 
-await $`bunx tailwindcss -i ./frontend/index.css -o ./frontend/tindex.css`;
+const originalPath = "./frontend/index.css";
+const temporaryPath = "./frontend/tindex.css";
 
-const original = await Bun.file("./frontend/index.css").bytes()
+const original = Bun.file(originalPath);
+const temporary = Bun.file(temporaryPath);
+const originalContent = await original.bytes();
 
+await $`bunx tailwindcss -i ${originalPath} -o ${temporaryPath}`;
+await original.write(temporary);
+await temporary.delete();
 
-await Bun.write("./frontend/index.css", Bun.file("./frontend/tindex.css"));
-await $`bun build --compile index.ts --define="process.env.NODE_ENV='production'" --outfile=server-manager`
-await Bun.file("./frontend/tindex.css").delete();
+await $`bun build --compile index.ts --define="process.env.NODE_ENV='production'" --outfile=server-manager`;
 
-await Bun.write("./frontend/index.css", original);
+await original.write(originalContent);

@@ -37,3 +37,15 @@ export const uploadDemoFiles = async (fileName: string, playedAt: number) => {
     body: file.stream(),
   });
 };
+
+export const deleteDemoFiles = async (fileName: string) => {
+  //   const matchTime = await getPlayedAtTimeFromFile(fileName);
+  const files = (await fs.promises.readdir(DEMO_DIR)).filter(
+    (file) => file.startsWith(DEMO_PREFIX) && file.endsWith(".dem")
+  );
+  if (!files.includes(fileName)) {
+    return false;
+  }
+  await Bun.file(path.join(DEMO_DIR, fileName)).delete();
+  return true;
+};
