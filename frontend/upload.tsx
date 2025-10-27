@@ -1,10 +1,30 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Upload, X } from "lucide-react";
 import { ActionButton } from "./button";
 import ky from "ky";
+import type { SimpleWebSocket } from "simple-websockets";
+import type { OutputType } from "./api";
+import type { ResourceUsage } from "../backend/os";
 
 type DemoData = { file: string; updatedAt: number; createdAt: number };
 type DemoDataExtended = DemoData & { playedAt: number };
+
+export const idsToResolvers: Record<string, PromiseWithResolvers<void>> = {};
+
+export const socketContext = {
+  socket: null as SimpleWebSocket<{
+    commandline: [lines: string | string[], type: OutputType];
+    resources: [usage: ResourceUsage];
+    demoUploadProgress: [
+      data: {
+        uploadId: string;
+        bytesUploaded: number;
+        totalBytes: number;
+        finished: boolean;
+      }
+    ];
+  }> | null,
+};
 
 export default function UploadFilesModal({ accessKey }: { accessKey: string }) {
   const [showModal, setShowModal] = useState(false);
@@ -14,10 +34,43 @@ export default function UploadFilesModal({ accessKey }: { accessKey: string }) {
   const [isUploading, setIsUploading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
 
-  const [progressState, _setProgressState] = useState([] as string[]);
-  const setProgressState = (msg: string, state: string) => {
-    _setProgressState((p) => [...p, msg]);
+  const [progressState, _setProgressState] = useState(
+    [] as { msg: string; id?: string }[]
+  );
+  const setProgressState = (msg: string, id?: string) => {
+    _setProgressState((p) => {
+      if (!id) {
+        return [...p, { msg, id }];
+      }
+      const targetIndex = p.findIndex((entry) => entry.id === id);
+      if (targetIndex === -1) {
+        return [...p, { msg, id }];
+      }
+      const newState = [...p];
+      newState[targetIndex] = { msg, id };
+      return newState;
+    });
   };
+
+  useEffect(() => {
+    const registerForSocket = () => {
+      if (!socketContext.socket)
+        return setTimeout(() => registerForSocket(), 1000);
+      socketContext.socket?.on("demoUploadProgress", (data) => {
+        setProgressState(
+          `⟳ Uploading: ${(
+            (data.bytesUploaded / data.totalBytes) *
+            100
+          ).toFixed(2)}%`,
+          data.uploadId
+        );
+        if (data.finished) {
+          idsToResolvers[data.uploadId]?.resolve();
+        }
+      });
+    };
+    registerForSocket();
+  }, []);
 
   const fetchFiles = async () => {
     setIsLoadingFiles(true);
@@ -32,7 +85,7 @@ export default function UploadFilesModal({ accessKey }: { accessKey: string }) {
       setFiles(filesWithPlayedAt);
     } catch (error: any) {
       if (setProgressState) {
-        setProgressState(`Error fetching files: ${error.message}`, "error");
+        setProgressState(`Error fetching files: ${error.message}`);
       }
     }
     setIsLoadingFiles(false);
@@ -61,10 +114,7 @@ export default function UploadFilesModal({ accessKey }: { accessKey: string }) {
     if (selectedFiles.size === 0) return;
 
     setIsRemoving(true);
-    setProgressState(
-      `Starting removal of ${selectedFiles.size} files...`,
-      "info"
-    );
+    setProgressState(`Starting removal of ${selectedFiles.size} files...`);
 
     for (const fileName of selectedFiles) {
       try {
@@ -75,17 +125,14 @@ export default function UploadFilesModal({ accessKey }: { accessKey: string }) {
         setProgressState(`✓ Removed: ${fileName}`, "success");
       } catch (error: any) {
         if (setProgressState) {
-          setProgressState(
-            `✗ Error removing ${fileName}: ${error.message}`,
-            "error"
-          );
+          setProgressState(`✗ Error removing ${fileName}: ${error.message}`);
         }
       }
     }
     await fetchFiles();
     setIsRemoving(false);
     setSelectedFiles(new Set());
-    setProgressState("Removal process completed", "info");
+    setProgressState("Removal process completed");
   };
 
   const handleUploadFiles = async () => {
@@ -93,10 +140,7 @@ export default function UploadFilesModal({ accessKey }: { accessKey: string }) {
 
     setIsUploading(true);
     if (setProgressState) {
-      setProgressState(
-        `Starting upload of ${selectedFiles.size} files...`,
-        "info"
-      );
+      setProgressState(`Starting upload of ${selectedFiles.size} files...`);
     }
 
     for (const fileName of selectedFiles) {
@@ -105,17 +149,21 @@ export default function UploadFilesModal({ accessKey }: { accessKey: string }) {
         continue;
       }
       try {
-        await ky.post("/demos", {
-          json: { fileName, playedAt },
-          headers: { authorization: accessKey },
-        });
+        const response = await ky
+          .post<{ uploadId: string }>("/demos", {
+            json: { fileName, playedAt },
+            headers: { authorization: accessKey },
+            timeout: 120_000,
+            retry: 0,
+          })
+          .then((res) => res.json());
+        setProgressState(`⟳ Uploading: 0%`, response.uploadId);
+        idsToResolvers[response.uploadId] = Promise.withResolvers<void>();
+        await idsToResolvers[response.uploadId]?.promise;
         setProgressState(`✓ Uploaded: ${fileName}`, "success");
       } catch (error: any) {
         if (setProgressState) {
-          setProgressState(
-            `✗ Error uploading ${fileName}: ${error.message}`,
-            "error"
-          );
+          setProgressState(`✗ Error uploading ${fileName}: ${error.message}`);
         }
       }
     }
@@ -123,7 +171,7 @@ export default function UploadFilesModal({ accessKey }: { accessKey: string }) {
     setIsUploading(false);
     setSelectedFiles(new Set());
     if (setProgressState) {
-      setProgressState("Upload process completed", "info");
+      setProgressState("Upload process completed");
     }
   };
 
@@ -307,7 +355,7 @@ export default function UploadFilesModal({ accessKey }: { accessKey: string }) {
                           key={index}
                           className="text-xs text-gray-300 font-mono mb-1 last:mb-0"
                         >
-                          {log}
+                          {log.msg}
                         </div>
                       ))}
                     </div>

@@ -1,6 +1,7 @@
 import path from "path";
 import { env } from "./env";
 import fs from "fs";
+import { convertEventToMessage } from "simple-websockets";
 
 export const DEMO_PREFIX = `MATCH_`;
 const DEMO_DIR = path.join(env.CS2_PATH, "./game/csgo");
@@ -23,19 +24,57 @@ export const getDemoList = async () => {
   return filesWithDesc;
 };
 
-export const uploadDemoFiles = async (fileName: string, playedAt: number) => {
+export const uploadDemoFiles = (
+  fileName: string,
+  playedAt: number,
+  server: Bun.Server
+) => {
   //   const matchTime = await getPlayedAtTimeFromFile(fileName);
+  const uploadId = Bun.randomUUIDv7();
+
   const file = Bun.file(path.join(DEMO_DIR, fileName));
 
-  return fetch(env.DEMO_UPLOAD_API, {
+  const totalBytes = file.size;
+  let bytesUploaded = 0;
+  const start = Date.now();
+
+  fetch(env.DEMO_UPLOAD_API, {
     method: "POST",
     headers: {
       fileName,
       authorization: env.DEMO_UPLOAD_AUTHORIZATION,
       matchtime: `${playedAt}`,
     },
-    body: file.stream(),
+    body: file.stream().pipeThrough(
+      new TransformStream({
+        transform(chunk, controller) {
+          controller.enqueue(chunk);
+          bytesUploaded += chunk.byteLength;
+          server.publish(
+            "demoUploadProgress",
+            convertEventToMessage("demoUploadProgress", {
+              uploadId,
+              bytesUploaded,
+              totalBytes,
+              finished: false,
+            })
+          );
+        },
+        flush(_controller) {},
+      })
+    ),
+  }).then((response) => {
+    server.publish(
+      "demoUploadProgress",
+      convertEventToMessage("demoUploadProgress", {
+        uploadId,
+        bytesUploaded,
+        totalBytes,
+        finished: true,
+      })
+    );
   });
+  return uploadId;
 };
 
 export const deleteDemoFiles = async (fileName: string) => {

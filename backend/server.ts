@@ -74,9 +74,9 @@ export const server = Bun.serve({
       POST: async (req) => {
         checkAuth(req);
         const body = uploadFileInput.parse(await req.json());
-        await uploadDemoFiles(body.fileName, body.playedAt);
+        const uploadId = uploadDemoFiles(body.fileName, body.playedAt, server);
 
-        return Response.json({ ok: true });
+        return Response.json({ ok: true, uploadId });
       },
 
       DELETE: async (req) => {
@@ -123,6 +123,7 @@ export const server = Bun.serve({
       }
       ws.subscribe("stdout");
       ws.subscribe("stderr");
+      ws.subscribe("demoUploadProgress");
     },
   },
 });
