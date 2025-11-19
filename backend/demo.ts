@@ -29,6 +29,7 @@ export const uploadDemoFiles = (
   playedAt: number,
   server: Bun.Server
 ) => {
+  if (!env.DEMO_UPLOAD_API || !env.DEMO_UPLOAD_AUTHORIZATION) return null;
   //   const matchTime = await getPlayedAtTimeFromFile(fileName);
   const uploadId = Bun.randomUUIDv7();
 

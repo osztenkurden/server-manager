@@ -75,6 +75,9 @@ export const server = Bun.serve({
         checkAuth(req);
         const body = uploadFileInput.parse(await req.json());
         const uploadId = uploadDemoFiles(body.fileName, body.playedAt, server);
+        if (!uploadId) {
+          return new Response(null, { status: 403 });
+        }
 
         return Response.json({ ok: true, uploadId });
       },

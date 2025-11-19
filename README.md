@@ -9,7 +9,22 @@ bun install
 To run:
 
 ```bash
-bun run index.ts
+bun index.ts
 ```
 
-This project was created using `bun init` in bun v1.2.16. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+To compile:
+
+```bash
+bun run compile
+```
+
+.env:
+
+```bash
+CS2_PATH= #ex: C:\steamcmd\cs2-ds
+STEAMCMD_PATH= #ex: C:\steamcmd
+ACCESS_KEY= #abc
+PORT=5817
+CS2_SERVER_ARGS= #optional
+
+```

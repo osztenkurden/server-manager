@@ -12,7 +12,6 @@
     "tailwindcss": "^4.1.10"
   },
   "scripts": {
-    "pack": "tar --exclude=node_modules --exclude=EXPORT --exclude=.env --exclude=export.tar.gz -czf export.tar.gz ./*",
     "compile": "bun run build.ts"
   },
   "peerDependencies": {

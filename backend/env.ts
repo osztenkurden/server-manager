@@ -4,10 +4,10 @@ const envSchema = z.object({
   CS2_PATH: z.string(),
   STEAMCMD_PATH: z.string(),
   CS2_SERVER_ARGS: z.string().optional(),
-  DEMO_UPLOAD_AUTHORIZATION: z.string(),
+  DEMO_UPLOAD_AUTHORIZATION: z.string().optional(),
   ACCESS_KEY: z.string(),
-  DEMO_UPLOAD_API: z.string(),
-  PORT: z.coerce.number().optional()
+  DEMO_UPLOAD_API: z.string().optional(),
+  PORT: z.coerce.number().optional(),
 });
 
 const env = envSchema.parse(process.env);
